@@ -209,6 +209,11 @@ typedef struct SettingsDataStruct {
   float runout_distance_mm;                             // M412 D
 
   //
+  // Baud Rate
+  //
+  long baudrate[2];                                     // M575 P S
+
+  //
   // ENABLE_LEVELING_FADE_HEIGHT
   //
   float planner_z_fade_height;                          // M420 Zn  planner.z_fade_height
@@ -689,6 +694,31 @@ void MarlinSettings::postprocess() {
         constexpr float runout_distance_mm = 0;
       #endif
       EEPROM_WRITE(runout_distance_mm);
+    }
+
+    //
+    // Baud Rate
+    //
+    {
+      const long baudrate[2] = {
+        #if ENABLED(BAUD_RATE_GCODE)
+          #ifdef SERIAL_PORT
+            MYSERIAL0.baudrate
+          #else
+            BAUDRATE
+          #endif
+          ,
+          #ifdef SERIAL_PORT_2
+            MYSERIAL1.baudrate
+          #else
+            BAUDRATE
+          #endif
+        #else
+          BAUDRATE, BAUDRATE
+        #endif
+      };
+      _FIELD_TEST(baudrate);
+      EEPROM_WRITE(baudrate);
     }
 
     //
@@ -1546,6 +1576,29 @@ void MarlinSettings::postprocess() {
         EEPROM_READ(runout_distance_mm);
         #if HAS_FILAMENT_RUNOUT_DISTANCE
           if (!validating) runout.set_runout_distance(runout_distance_mm);
+        #endif
+      }
+
+      //
+      // Baud Rate
+      //
+      {
+        long baudrate[2];
+        _FIELD_TEST(baudrate);
+        EEPROM_READ(baudrate);
+        #if ENABLED(BAUD_RATE_GCODE)
+          if (!validating) {
+            #ifdef SERIAL_PORT
+              if (MYSERIAL0.baudrate != baudrate[0]) {
+                MYSERIAL0.end(); MYSERIAL0.begin(baudrate[0]);
+              }
+            #endif
+            #ifdef SERIAL_PORT_2
+              if (MYSERIAL1.baudrate != baudrate[1]) {
+                MYSERIAL1.end(); MYSERIAL1.begin(baudrate[1]);
+              }
+            #endif
+          }
         #endif
       }
 
@@ -2564,6 +2617,24 @@ void MarlinSettings::reset() {
   #endif
 
   //
+  // Baud Rate
+  //
+  {
+    #if ENABLED(BAUD_RATE_GCODE)
+      #ifdef SERIAL_PORT
+        if (MYSERIAL0.baudrate != BAUDRATE) {
+          MYSERIAL0.end(); MYSERIAL0.begin(BAUDRATE);
+        }
+      #endif
+      #ifdef SERIAL_PORT_2
+        if (MYSERIAL1.baudrate != BAUDRATE) {
+          MYSERIAL1.end(); MYSERIAL1.begin(BAUDRATE);
+        }
+      #endif
+    #endif
+  }
+
+  //
   // Tool-change Settings
   //
 
@@ -3164,6 +3235,16 @@ void MarlinSettings::reset() {
         );
         SERIAL_ECHOLNPAIR_F_P(SP_Z_STR, LINEAR_UNIT(hotend_offset[e].z), 3);
       }
+    #endif
+
+    #if ENABLED(BAUD_RATE_GCODE)
+      CONFIG_ECHO_HEADING("Serial Baudrate:");
+      #ifdef SERIAL_PORT
+        CONFIG_ECHO_MSG(" M575 P0 S", MYSERIAL0.baudrate);
+      #endif
+      #ifdef SERIAL_PORT_2
+        CONFIG_ECHO_MSG(" M575 P1 S", MYSERIAL1.baudrate);
+      #endif
     #endif
 
     /**

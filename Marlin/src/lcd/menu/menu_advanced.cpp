@@ -495,6 +495,53 @@ void menu_backlash();
     }
   #endif
 
+  #if ENABLED(BAUD_RATE_GCODE)
+
+    inline void enqueue_M575(const uint8_t p, const uint32_t b) {
+      cmd[20];
+      sprintf_P(cmd, PSTR("M575P%dB%ldU"), int(p), b);
+      lcd_enqueue_one_now(cmd);
+    }
+
+    static void lcd_set_serial_baud(const uint8_t p) {
+      START_MENU();
+      MENU_BACK(TERN(HAS_MULTI_SERIAL, MSG_SET_BAUDRATE, MSG_ADVANCED_SETTINGS);
+      ACTION_ITEM(MSG_SERIAL_BAUD_2400,    []{ enqueue_M575(p,    2400) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_4800,    []{ enqueue_M575(p,    4800) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_9600,    []{ enqueue_M575(p,    9600) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_19200,   []{ enqueue_M575(p,   19200) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_38400,   []{ enqueue_M575(p,   38400) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_57600,   []{ enqueue_M575(p,   57600) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_115200,  []{ enqueue_M575(p,  115200) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_230400,  []{ enqueue_M575(p,  230400) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_250000,  []{ enqueue_M575(p,  250000) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_500000,  []{ enqueue_M575(p,  500000) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_1000000, []{ enqueue_M575(p, 1000000) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_2000000, []{ enqueue_M575(p, 2000000) });
+      ACTION_ITEM(MSG_SERIAL_BAUD_4000000, []{ enqueue_M575(p, 4000000) });
+      END_MENU();
+    }
+
+    #ifdef SERIAL_PORT
+      static void lcd_set_serial1_baud() { lcd_set_serial_baud(0); }
+    #endif
+
+    #ifdef SERIAL_PORT_2
+      static void lcd_set_serial2_baud() { lcd_set_serial_baud(1); }
+    #endif
+
+    #if HAS_MULTI_SERIAL
+      static void lcd_select_serial_baud() {
+        START_MENU();
+        MENU_BACK(MSG_ADVANCED_SETTINGS);
+        MENU_ITEM(submenu, MSG_SET_BAUDRATE_1, lcd_set_serial1_baud);
+        MENU_ITEM(submenu, MSG_SET_BAUDRATE_2, lcd_set_serial2_baud);
+        END_MENU();
+      }
+    #endif
+
+  #endif
+
 #endif // !SLIM_LCD_MENUS
 
 // M92 Steps-per-mm
@@ -556,6 +603,16 @@ void menu_advanced_settings() {
     // M851 - Z Probe Offsets
     #if HAS_BED_PROBE
       if (!is_busy) SUBMENU(MSG_ZPROBE_OFFSETS, menu_probe_offsets);
+    #endif
+
+    #if ENABLED(BAUD_RATE_GCODE)
+      #if HAS_MULTI_SERIAL
+        MENU_ITEM(submenu, MSG_SET_BAUDRATE, lcd_select_serial_baud);
+      #elif defined(SERIAL_PORT)
+        MENU_ITEM(submenu, MSG_SET_BAUDRATE_1, lcd_set_serial1_baud);
+      #elif defined(SERIAL_PORT_2)
+        MENU_ITEM(submenu, MSG_SET_BAUDRATE_2, lcd_set_serial2_baud);
+      #endif
     #endif
 
   #endif // !SLIM_LCD_MENUS

@@ -54,6 +54,7 @@ template<typename Cfg> uint8_t  MarlinSerial<Cfg>::xon_xoff_state = MarlinSerial
 template<typename Cfg> uint8_t  MarlinSerial<Cfg>::rx_dropped_bytes = 0;
 template<typename Cfg> uint8_t  MarlinSerial<Cfg>::rx_buffer_overruns = 0;
 template<typename Cfg> uint8_t  MarlinSerial<Cfg>::rx_framing_errors = 0;
+template<typename Cfg> long     MarlinSerial<Cfg>::current_baudrate = BAUDRATE;
 template<typename Cfg> typename MarlinSerial<Cfg>::ring_buffer_pos_t MarlinSerial<Cfg>::rx_max_enqueued = 0;
 
 // A SW memory barrier, to ensure GCC does not overoptimize loops
@@ -332,9 +333,15 @@ FORCE_INLINE void MarlinSerial<Cfg>::_tx_udr_empty_irq() {
 
 // Public Methods
 template<typename Cfg>
+long MarlinSerial<Cfg>::baudrate() {
+  return current_baudrate;
+}
+
+template<typename Cfg>
 void MarlinSerial<Cfg>::begin(const long baud) {
   uint16_t baud_setting;
   bool useU2X = true;
+  current_baudrate = baud;
 
   #if F_CPU == 16000000UL && SERIAL_PORT == 0
     // Hard-coded exception for compatibility with the bootloader shipped

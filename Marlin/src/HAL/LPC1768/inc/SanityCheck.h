@@ -28,6 +28,10 @@
   #error "framework-arduino-lpc176x package is out of date, Please update the PlatformIO platforms, frameworks and libraries."
 #endif
 
+#if ENABLED(BAUD_RATE_GCODE)
+  #error "BAUD_RATE_GCODE is not yet supported on LPC176x."
+#endif
+
 /**
  * Detect an old pins file by checking for old ADC pins values.
  */
@@ -76,8 +80,6 @@ static_assert(!(NUM_SERVOS && ENABLED(FAST_PWM_FAN)), "BLTOUCH and Servos are in
     #error "Re-ARM with REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER and TMC2130 requires TMC_USE_SW_SPI."
   #endif
 #endif
-
-static_assert(DISABLED(BAUD_RATE_GCODE), "BAUD_RATE_GCODE is not yet supported on LPC176x.");
 
 /**
  * Flag any serial port conflicts
